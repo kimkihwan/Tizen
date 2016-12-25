@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>TEST APP</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css"/>
+</head>
+
+<body>
+	<div id="top">
+		<form method="post" enctype="multipart/form-data" target="hiddenframe" action="http://cspro.sogang.ac.kr/~cse20101611/image.php">
+			<input type="file" accept="image/*" name="upload_image">					<!-- 업로드할 이미지 -->
+			<input type="text" id="input_name" name="upload_username" value="user">		<!-- 사용자 이름 -->
+			<input type="hidden" id="input_lat" name="upload_lat" value="">				<!-- 현재 위도 값 -->
+			<input type="hidden" id="input_lon" name="upload_lon" value="">				<!-- 현재 경도 값 -->
+			<input class="button" id="btn_up" type="image" src="img/btn_imgup2.png">
+			<img class="button" id="btn_move" src="img/btn_move_able2.png">
+			<img class="button" id="btn_turn" src="img/btn_turn_able2.png">
+			<img class="button" id="btn_rec" src="img/btn_rec_start2.png">
+			<img class="button_s" id="btn_play" src="img/btn_rec_play2.png">
+		</form>
+	</div>
+	<div class="overlay"><img class= "overlayImg" id="overlayImg0" src=""></div>
+    <div class="overlay"><img class= "overlayImg" id="overlayImg1" src=""></div>
+    <div class="overlay"><img class= "overlayImg" id="overlayImg2" src=""></div>
+    <div id="container"><div id="contents">
+    	<img id="sviewImg" src="icon.png">
+    	<br><span id="debugText"></span>
+    </div></div>
+    <iframe id="hidden" name="hiddenframe"></iframe>
+    
+    <script src="js/jquery-3.1.1.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
+
