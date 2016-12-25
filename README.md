@@ -1,6 +1,6 @@
 # Tizen
 
-Tizen Web Application
+데모 영상 : https://youtu.be/0cEsUlyW24s
 
 추억을 찾아 떠나는 스트리트뷰 여행
 
