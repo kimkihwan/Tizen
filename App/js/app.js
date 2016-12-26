@@ -1,24 +1,29 @@
 (function() {
-	var google_apiKey = "AIzaSyDf_XSGcqn_P6ySl9dYCuHYJycbJTdQ0tM";
-	var imgRefUrl = "http://cspro.sogang.ac.kr/~cse20101611/upload/";
+	var google_apiKey = "AIzaSyDf_XSGcqn_P6ySl9dYCuHYJycbJTdQ0tM";				// 구글 지도 API KEY (비공개)
+	var imgRefUrl = "http://cspro.sogang.ac.kr/~cse20101611/upload/";			// 서버의 이미지 저장 경로 (비공개)			
 	var gps, vLat, vLon, pLat, pLon, xPos, yPos, heading, pheading, timer, ptimer;
-	var queryCnt, recCnt, isRecording, recFrame, recFrameLength, isPlaying;
+	var queryCnt, recCnt, isRecording, recFrame, isPlaying;
 	var overlayImg;
 	
+	// 디버그 전용 설정 변수
 	var debugMode = true;
-	var useGPS = false;
+	var useGPS = true;
 	var lockMove = true; 
 	var lockTurn = true;
 	var speed = 3;
-
+	//
+	
+	// 타이젠 하드웨어 키 종료 이벤트 함수
     function keyEventHandler(event) {
         if (event.keyName === "back") {
             try { tizen.application.getCurrentApplication().exit(); } catch (ignore) {}
         }
     }
     
+    // GPS 위치정보 반환 callback 함수
     function getGPSPosition(position) { gps = position; }
     
+    // 기울기센서 조작 이벤트 함수
     function tiltHandler(dataEvent) {
     	var MAX_G = 10;
         var noGravitation, xDiff, yDiff;
@@ -34,12 +39,12 @@
         xPos = (xDiff / MAX_G);
         yPos = (yDiff / MAX_G);
         
-        if(xPos > 0.3 && lockTurn === false) {		// 왼쪽
+        if(xPos > 0.3 && lockTurn === false) {		// 왼쪽으로 기울기 => 시점 좌회전
         	if(heading>0) {heading -= 1;}
         	else {heading = 359;}
         	document.getElementById("btn_turn").src = "img/btn_turn_ing2.png";
         }			
-        else if(xPos < -0.3 && lockTurn === false) {	// 오른쪽
+        else if(xPos < -0.3 && lockTurn === false) {	// 오른쪽으로 기울기 => 시점 우회전
         	if(heading<360) {heading += 1;}
         	else {heading = 1;}
         	document.getElementById("btn_turn").src = "img/btn_turn_ing2.png";
@@ -50,19 +55,19 @@
         if (heading>180) {deg = heading-360;}
         else {deg = heading;}
         rad = deg * Math.PI / 180;
-        if(yPos > -0.50 && lockMove === false) {		// 아래쪽, 전진
+        if(yPos > -0.50 && lockMove === false) {		// 아래쪽으로 기울기 => 전진 이동
         	vLat += Math.cos(rad)/1000000*speed;
         	vLon += Math.sin(rad)/1000000*speed;
         	document.getElementById("btn_move").src = "img/btn_move_ing2.png";
         }
-        else if(yPos < -0.90 && lockMove === false){ 	// 위쪽, 후진
+        else if(yPos < -0.90 && lockMove === false){ 	// 위쪽으로 기울기 => 후진 이동
         	vLat -= Math.cos(rad)/1000000*speed;
         	vLon -= Math.sin(rad)/1000000*speed;
         	document.getElementById("btn_move").src = "img/btn_move_ing2.png";
         }
         else { displayMove(); }
         
-        if (Math.abs(pLat-vLat) >= 0.0001) {
+        if (Math.abs(pLat-vLat) >= 0.0001) {			// 위도,경도의 누적 변화가 0.0001도 이상일 경우 반영
         	pLat = vLat;
         	moved = true;
         }
@@ -70,15 +75,13 @@
         	pLon = vLon;
         	moved = true;
         } 
-        if(Math.abs(pheading-heading) >= 10) {
+        if(Math.abs(pheading-heading) >= 10) {			// 시점 회전의 누적 변화가 10도 이상일 경우 반영
         	pheading = heading;
         	turned = true;
         }
                 
-        if(isPlaying) {
+        if(isPlaying) {									// 기록된 여행 경로 재생중일 경우의 처리
         	timer++;
-        	//document.getElementById("debugText").innerHTML = recFrame[recCnt].frame;
-        	//document.getElementById("debugText").innerHTML = timer;
         	if(timer === ptimer) {
         		document.getElementById("sviewImg").src=recFrame[recCnt].frame;
         		recCnt++;
@@ -87,7 +90,7 @@
         	}
         }
         
-        if (moved || turned) {
+        if (moved || turned) {							// 반영된 위도, 경도, 방위의 구글 스트리트뷰 이미지를 로드
         	var params;
         	var imgsrc = "https://maps.googleapis.com/maps/api/streetview?size=300x400";
         	imgsrc += "&location=" + vLat + ", " + vLon;
@@ -99,6 +102,7 @@
         	document.getElementById("input_lat").value = vLat.toFixed(5);
         	document.getElementById("input_lon").value = vLon.toFixed(5);
 
+        	// 위치 변동시, 해당 위치에서 가까운 거리에 업로드된 이미지가 있는지 서버에 쿼리
         	if(moved) {
         		params="ping_username="+document.getElementById("input_name").value;
         		params+="&ping_lat="+vLat.toFixed(5)+"&ping_lon="+vLon.toFixed(5);
@@ -126,6 +130,7 @@
         		});
         	}
         	
+        	// 여행 경로 기록중일시, 사용자 이름과 현재 위치를 서버에 쿼리
         	if(isRecording) {
         		params="record_username="+document.getElementById("input_name").value;
         		params+="&record_frame="+imgsrc+"&record_start=";
@@ -145,6 +150,7 @@
         		if(recCnt === 50) { setRec(); }
         	}
         	
+        	// 가까운 거리에 업로드된 이미지가 있을 경우 이미지를 오버레이 표시
         	for(var i=0; i<3; i++) { if(overlayImg[i].isNear) { setOverlayImg(i); }}
         	queryCnt++;
         }
@@ -152,6 +158,7 @@
         if(debugMode) { viewDebugText(); }
     }
     
+    // 디버깅을 위한 정보 표시
     function viewDebugText() {
     	var debugtext = "위도:" + vLat.toFixed(5) + "경도: " + vLon.toFixed(5);
     	debugtext += " 방위:" + heading;
@@ -161,6 +168,7 @@
     	document.getElementById("debugText").innerHTML = debugtext;
     }
     
+    // 이동 및 회전 고정 변경과 현재 상태 표시 함수
     function displayMove() {
     	if(lockMove) { document.getElementById("btn_move").src = "img/btn_move_lock2.png"; }
     	else { document.getElementById("btn_move").src = "img/btn_move_able2.png"; }
@@ -193,6 +201,7 @@
     	}
     }
     
+    // 여행 기록 시작 및 종료 함수
     function setRec() {
     	if(isRecording) {
     		isRecording = false;
@@ -205,6 +214,7 @@
     	}
     }
     
+    // 업로드된 이미지 오버레이 함수
     function setOverlayImg(i) {
 		var dLat, dLon, dist, rad, deg, deg2, img, id;
 		
@@ -214,7 +224,7 @@
 		id = "overlayImg"+i;
 		img = document.getElementById(id).style;
 		
-		if(dist > 200) { 
+		if(dist > 200) { 						// 현재 위치와 업로드된 이미지의 거리가 약 200미터 이상일 경우 표시를 초기화
 			overlayImg[i].isNear = false;
 			overlayImg[i].url = "";
 			img.opacity = 0;
@@ -241,6 +251,7 @@
 		}
 	}
     
+    // 과거에 기록한 여행 경로를 서버에 쿼리
     function playRec() {
     	var params="record_username="+document.getElementById("input_name").value;
     	if(lockMove===false) { setMove(); }  
@@ -252,16 +263,12 @@
     	      type:"POST",
     	      url:"http://cspro.sogang.ac.kr/~cse20101611/dis_frame.php",
     	      data: params,
-    	      //async: false,
     	      success : function(data) {
-    	    	  var start, end, raw, list;
+    	    	  var start, end, raw;
     	    	  start = data.indexOf("[");
     	    	  end = data.indexOf("]");
     	    	  raw = data.substring(start,end+1);
     	    	  recFrame = jQuery.parseJSON(raw);
-    	    	  //recFrameLength = list.length;
-    	    	  //document.getElementById("debugText").innerHTML = recFrame[0].frame;
-    	    	  //for(var i=0; i<list.length; i++) { recFrame[i] = list[i].frame; }
     	      	recCnt = timer = 0;
     	      	ptimer = 25;
     	    	  isPlaying = true;
@@ -270,15 +277,7 @@
     		});
     }
     
-    function sleep(num) {
-    	var now = new Date();
-		var stop = now.getTime() + num;
-		while(true){
-			now = new Date();
-			if(now.getTime() > stop) { return; }
-		}
-    }
-    
+    // 초기 설정 및 시작 함수
     function init() {	
         document.addEventListener("tizenhwkey", keyEventHandler);
         
@@ -302,6 +301,7 @@
         document.getElementById('btn_rec').addEventListener('click', setRec);
         document.getElementById('btn_play').addEventListener('click', playRec);
         
+        // 오버레이 이미지 객체 초기화
         overlayImg = new Array(3);
     	for(var i=0; i<3; i++) {
     		overlayImg[i] = new Object();
